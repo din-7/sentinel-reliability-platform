@@ -20,6 +20,7 @@ services:
       - "8080:8080"
     environment:
       DATABASE_URL: "postgresql+psycopg://${POSTGRES_USER:?Set POSTGRES_USER in .env}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB in .env}"
+      FRONTEND_ORIGIN: "http://localhost:5173"
     depends_on:
       postgres:
         condition: service_healthy
@@ -71,6 +72,16 @@ services:
       - checkout-service
       - payment-service
       - inventory-service
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: "http://localhost:8080"
+    depends_on:
+      - backend
 
 volumes:
   sentinel-postgres-data:

@@ -2,8 +2,10 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+import os
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import create_database_engine, create_session_factory
 from app.db_models import Base
@@ -30,6 +32,13 @@ def create_app(repository: TelemetryRepository | None = None) -> FastAPI:
             engine.dispose()
 
     app = FastAPI(title="Sentinel Backend", lifespan=lifespan)
+    frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[frontend_origin],
+        allow_methods=["GET"],
+        allow_headers=["*"],
+    )
     app.include_router(create_api_router())
 
     @app.get("/health")
