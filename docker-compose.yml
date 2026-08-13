@@ -19,3 +19,19 @@ services:
       dockerfile: inventory_service/Dockerfile
     ports:
       - "8003:8003"
+
+  traffic-generator:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile.traffic-generator
+    environment:
+      CHECKOUT_SERVICE_URL: http://checkout-service:8001
+      PAYMENT_SERVICE_URL: http://payment-service:8002
+      INVENTORY_SERVICE_URL: http://inventory-service:8003
+      REQUEST_INTERVAL_SECONDS: "${REQUEST_INTERVAL_SECONDS:-1.0}"
+      REQUEST_JITTER_SECONDS: "${REQUEST_JITTER_SECONDS:-0.2}"
+      REQUEST_TIMEOUT_SECONDS: "${REQUEST_TIMEOUT_SECONDS:-2.0}"
+    depends_on:
+      - checkout-service
+      - payment-service
+      - inventory-service
