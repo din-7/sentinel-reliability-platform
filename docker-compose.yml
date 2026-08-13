@@ -1,0 +1,21 @@
+services:
+  checkout-service:
+    build:
+      context: ./simulator
+      dockerfile: checkout_service/Dockerfile
+    ports:
+      - "8001:8001"
+
+  payment-service:
+    build:
+      context: ./simulator
+      dockerfile: payment_service/Dockerfile
+    ports:
+      - "8002:8002"
+
+  inventory-service:
+    build:
+      context: ./simulator
+      dockerfile: inventory_service/Dockerfile
+    ports:
+      - "8003:8003"
