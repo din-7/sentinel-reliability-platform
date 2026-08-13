@@ -5,6 +5,9 @@ services:
       dockerfile: checkout_service/Dockerfile
     ports:
       - "8001:8001"
+    environment:
+      FAULT_LATENCY_MS: "${FAULT_LATENCY_MS:-500}"
+      FAULT_ERROR_PROBABILITY: "${FAULT_ERROR_PROBABILITY:-0.5}"
 
   payment-service:
     build:
@@ -12,6 +15,9 @@ services:
       dockerfile: payment_service/Dockerfile
     ports:
       - "8002:8002"
+    environment:
+      FAULT_LATENCY_MS: "${FAULT_LATENCY_MS:-500}"
+      FAULT_ERROR_PROBABILITY: "${FAULT_ERROR_PROBABILITY:-0.5}"
 
   inventory-service:
     build:
@@ -19,6 +25,9 @@ services:
       dockerfile: inventory_service/Dockerfile
     ports:
       - "8003:8003"
+    environment:
+      FAULT_LATENCY_MS: "${FAULT_LATENCY_MS:-500}"
+      FAULT_ERROR_PROBABILITY: "${FAULT_ERROR_PROBABILITY:-0.5}"
 
   traffic-generator:
     build:
