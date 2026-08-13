@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { latestByService, summarize } from "./telemetry";
+import { latestByService, mergeTelemetry, summarize } from "./telemetry";
 import type { TelemetryEvent } from "./types";
 
 const events: TelemetryEvent[] = [
@@ -15,5 +15,16 @@ describe("telemetry derivation", () => {
 
   it("summarizes only latest service snapshots", () => {
     expect(summarize(events)).toEqual({ totalRequests: 30, totalErrors: 3, averageLatency: 20 });
+  });
+
+  it("merges live events newest-first without duplicates", () => {
+    const live = { ...events[0], request_count: 21 };
+
+    expect(mergeTelemetry(events, [live, events[0]])).toEqual([
+      live,
+      events[0],
+      events[1],
+      events[2],
+    ]);
   });
 });

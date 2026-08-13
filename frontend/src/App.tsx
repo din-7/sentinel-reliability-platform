@@ -5,7 +5,7 @@ import { latestByService, serviceNames, summarize } from "./telemetry";
 import { useTelemetry } from "./useTelemetry";
 
 export default function App() {
-  const { events, loading, error } = useTelemetry();
+  const { events, loading, error, connectionStatus } = useTelemetry();
   const latest = latestByService(events);
   const summary = summarize(events);
 
@@ -14,11 +14,11 @@ export default function App() {
       <header className="masthead">
         <div className="brand-mark">S</div>
         <div><span className="eyebrow">Reliability control plane</span><h1>Sentinel</h1><p>Live operational health across your distributed services.</p></div>
-        <div className="live-indicator"><span />Polling every 5 seconds</div>
+        <div className={`live-indicator live-indicator--${connectionStatus.toLowerCase()}`}><span />{connectionStatus}</div>
       </header>
 
       {loading && <div className="notice">Connecting to Sentinel telemetry…</div>}
-      {error && <div className="notice notice--error">Unable to refresh telemetry: {error}. Retrying automatically.</div>}
+      {error && <div className="notice notice--error">Unable to load telemetry history: {error}.</div>}
 
       {!loading && events.length === 0 ? (
         <section className="empty-state"><h2>No telemetry received yet</h2><p>Start the traffic generator and this dashboard will populate automatically.</p></section>

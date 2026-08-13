@@ -9,8 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import create_database_engine, create_session_factory
 from app.db_models import Base
-from app.routes import create_api_router
+from app.routes import create_api_router, create_websocket_router
 from app.store import SQLAlchemyTelemetryRepository, TelemetryRepository
+from app.websocket import TelemetryConnectionManager
 
 
 def create_app(repository: TelemetryRepository | None = None) -> FastAPI:
@@ -32,6 +33,7 @@ def create_app(repository: TelemetryRepository | None = None) -> FastAPI:
             engine.dispose()
 
     app = FastAPI(title="Sentinel Backend", lifespan=lifespan)
+    app.state.telemetry_connections = TelemetryConnectionManager()
     frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
     app.add_middleware(
         CORSMiddleware,
@@ -40,6 +42,7 @@ def create_app(repository: TelemetryRepository | None = None) -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(create_api_router())
+    app.include_router(create_websocket_router())
 
     @app.get("/health")
     async def health() -> dict[str, str]:

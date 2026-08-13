@@ -6,6 +6,31 @@ export const serviceNames = [
   "inventory-service",
 ] as const;
 
+export function eventKey(event: TelemetryEvent) {
+  return [
+    event.service,
+    event.timestamp,
+    event.request_count,
+    event.error_count,
+    event.average_latency_ms,
+    event.fault_mode,
+  ].join("|");
+}
+
+export function mergeTelemetry(
+  current: TelemetryEvent[],
+  incoming: TelemetryEvent[],
+  limit = 100,
+) {
+  const events = new Map<string, TelemetryEvent>();
+  for (const event of [...incoming, ...current]) {
+    if (!events.has(eventKey(event))) events.set(eventKey(event), event);
+  }
+  return [...events.values()]
+    .sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp))
+    .slice(0, limit);
+}
+
 export function latestByService(events: TelemetryEvent[]) {
   const latest = new Map<string, TelemetryEvent>();
   for (const event of events) {
