@@ -1,4 +1,10 @@
 services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8080:8080"
+
   checkout-service:
     build:
       context: ./simulator
@@ -37,10 +43,12 @@ services:
       CHECKOUT_SERVICE_URL: http://checkout-service:8001
       PAYMENT_SERVICE_URL: http://payment-service:8002
       INVENTORY_SERVICE_URL: http://inventory-service:8003
+      SENTINEL_BACKEND_URL: http://backend:8080
       REQUEST_INTERVAL_SECONDS: "${REQUEST_INTERVAL_SECONDS:-1.0}"
       REQUEST_JITTER_SECONDS: "${REQUEST_JITTER_SECONDS:-0.2}"
       REQUEST_TIMEOUT_SECONDS: "${REQUEST_TIMEOUT_SECONDS:-2.0}"
     depends_on:
+      - backend
       - checkout-service
       - payment-service
       - inventory-service

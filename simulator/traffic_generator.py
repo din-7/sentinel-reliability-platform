@@ -34,13 +34,18 @@ def service_urls_from_environment() -> dict[str, str]:
     }
 
 
+def sentinel_backend_url_from_environment() -> str:
+    return os.getenv("SENTINEL_BACKEND_URL", "http://localhost:8080").rstrip("/")
+
+
 def send_one_round(
     client: httpx.Client,
     service_urls: Mapping[str, str],
+    sentinel_backend_url: str,
     jitter_seconds: float,
     sleep: Callable[[float], None] = time.sleep,
 ) -> tuple[int, int]:
-    """Send one health request to every service and return success/failure counts."""
+    """Collect and forward one telemetry event per service."""
     successes = 0
     failures = 0
 
@@ -49,18 +54,38 @@ def send_one_round(
             sleep(random.uniform(0, jitter_seconds))
 
         try:
-            response = client.get(f"{base_url}/health")
-            response.raise_for_status()
-            successes += 1
+            health_response = client.get(f"{base_url}/health")
+            health_response.raise_for_status()
         except httpx.HTTPError as exc:
+            logger.warning("Health check for %s failed: %s", service_name, exc)
+
+        try:
+            metrics_response = client.get(f"{base_url}/metrics")
+            metrics_response.raise_for_status()
+            telemetry = metrics_response.json()
+
+            if telemetry.get("service") != service_name:
+                raise ValueError(
+                    f"metrics identity mismatch: expected {service_name!r}, "
+                    f"received {telemetry.get('service')!r}"
+                )
+
+            backend_response = client.post(
+                f"{sentinel_backend_url}/api/v1/telemetry",
+                json=telemetry,
+            )
+            backend_response.raise_for_status()
+            successes += 1
+        except (httpx.HTTPError, ValueError) as exc:
             failures += 1
-            logger.warning("Request to %s failed: %s", service_name, exc)
+            logger.warning("Telemetry delivery for %s failed: %s", service_name, exc)
 
     return successes, failures
 
 
 def main() -> None:
     service_urls = service_urls_from_environment()
+    sentinel_backend_url = sentinel_backend_url_from_environment()
     interval_seconds = max(0.0, float(os.getenv("REQUEST_INTERVAL_SECONDS", "1.0")))
     jitter_seconds = max(0.0, float(os.getenv("REQUEST_JITTER_SECONDS", "0.2")))
     timeout_seconds = max(0.1, float(os.getenv("REQUEST_TIMEOUT_SECONDS", "2.0")))
@@ -70,7 +95,12 @@ def main() -> None:
     try:
         with httpx.Client(timeout=timeout_seconds) as client:
             while True:
-                send_one_round(client, service_urls, jitter_seconds)
+                send_one_round(
+                    client,
+                    service_urls,
+                    sentinel_backend_url,
+                    jitter_seconds,
+                )
                 time.sleep(interval_seconds)
     except KeyboardInterrupt:
         logger.info("Traffic generator stopped")
