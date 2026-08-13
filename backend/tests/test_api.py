@@ -2,12 +2,25 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import create_app
-from app.store import TelemetryStore
+from app.models import TelemetryEvent
+
+
+class FakeTelemetryRepository:
+    def __init__(self):
+        self.events = []
+
+    def add(self, event: TelemetryEvent) -> TelemetryEvent:
+        self.events.append(event)
+        return event
+
+    def recent(self, limit: int) -> list[TelemetryEvent]:
+        return list(reversed(self.events))[:limit]
 
 
 @pytest.fixture
 def client():
-    return TestClient(create_app(TelemetryStore()))
+    with TestClient(create_app(FakeTelemetryRepository())) as test_client:
+        yield test_client
 
 
 @pytest.fixture
